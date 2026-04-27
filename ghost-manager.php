@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Ghost Manager
  * Description: Subscription account management, WooCommerce integration, and related tools.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Ghost
  * Text Domain: ghost-manager
  *
@@ -13,9 +13,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GHOST_MANAGER_VERSION', '1.0.2' );
+define( 'GHOST_MANAGER_VERSION', '1.0.3' );
 define( 'GHOST_MANAGER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'GHOST_MANAGER_URL', plugin_dir_url( __FILE__ ) );
+
+/**
+ * GitHub repository URL for in-dashboard updates (trailing slash).
+ * Override in wp-config.php: define( 'GHOST_MANAGER_GITHUB_REPO', 'https://github.com/ORG/REPO/' );
+ */
+if ( ! defined( 'GHOST_MANAGER_GITHUB_REPO' ) ) {
+	define( 'GHOST_MANAGER_GITHUB_REPO', 'https://github.com/jcross-tech/ghost-manager/' );
+}
 
 require_once GHOST_MANAGER_PATH . 'includes/helpers/options.php';
 require_once GHOST_MANAGER_PATH . 'includes/helpers/features.php';
@@ -45,6 +53,32 @@ function ghost_manager_plugin_action_links( $links ) {
 	return $links;
 }
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'ghost_manager_plugin_action_links' );
+
+/**
+ * Check for newer versions on GitHub (requires GitHub Releases with a zip attached; tag = version e.g. 1.0.4).
+ *
+ * Uses Plugin Update Checker (MIT) in /plugin-update-checker/.
+ */
+function ghost_manager_register_github_updates() {
+	if ( defined( 'GHOST_MANAGER_DISABLE_GITHUB_UPDATES' ) && GHOST_MANAGER_DISABLE_GITHUB_UPDATES ) {
+		return;
+	}
+	$puc = GHOST_MANAGER_PATH . 'plugin-update-checker/plugin-update-checker.php';
+	if ( ! is_readable( $puc ) ) {
+		return;
+	}
+	$repo = apply_filters( 'ghost_manager_github_update_repo_url', GHOST_MANAGER_GITHUB_REPO );
+	if ( ! is_string( $repo ) || '' === trim( $repo ) ) {
+		return;
+	}
+	require_once $puc;
+	$checker = \YahnisElsts\PluginUpdateChecker\v5p6\PucFactory::buildUpdateChecker( $repo, __FILE__, 'ghost-manager' );
+	$api     = $checker->getVcsApi();
+	if ( $api && method_exists( $api, 'enableReleaseAssets' ) ) {
+		$api->enableReleaseAssets();
+	}
+}
+add_action( 'plugins_loaded', 'ghost_manager_register_github_updates', 0 );
 
 /**
  * Bootstrap plugin modules.
