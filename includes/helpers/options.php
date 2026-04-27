@@ -316,8 +316,8 @@ function ghost_manager_default_settings() {
 			'guide_transak'        => 'https://example.com/guides/transak/',
 		),
 		'renew_urls' => array(
-			'ghostplus' => '/product/service-one/',
-			'ghosttv'   => '/product/service-two/',
+			'sub1' => '/product/service-one/',
+			'sub2' => '/product/service-two/',
 		),
 		'taxonomies' => array(
 			'subscriptions_slug' => 'subscriptions',
@@ -574,15 +574,25 @@ function ghost_manager_update_settings_option( $sanitized ) {
  * @return array
  */
 function ghost_manager_apply_legacy_settings_aliases( $settings ) {
-	if ( ! isset( $settings['strings'] ) || ! is_array( $settings['strings'] ) ) {
-		return $settings;
+	if ( isset( $settings['strings'] ) && is_array( $settings['strings'] ) ) {
+		$s         = &$settings['strings'];
+		$legacy_lk = ghost_manager_legacy_service_label_option_keys();
+		if ( ( ! isset( $s['service_1'] ) || '' === trim( (string) $s['service_1'] ) ) && ! empty( $s[ $legacy_lk[0] ] ) ) {
+			$s['service_1'] = $s[ $legacy_lk[0] ];
+		}
+		if ( ( ! isset( $s['service_2'] ) || '' === trim( (string) $s['service_2'] ) ) && ! empty( $s[ $legacy_lk[1] ] ) ) {
+			$s['service_2'] = $s[ $legacy_lk[1] ];
+		}
 	}
-	$s = &$settings['strings'];
-	if ( ( ! isset( $s['service_1'] ) || '' === trim( (string) $s['service_1'] ) ) && ! empty( $s['service_ghostplus'] ) ) {
-		$s['service_1'] = $s['service_ghostplus'];
-	}
-	if ( ( ! isset( $s['service_2'] ) || '' === trim( (string) $s['service_2'] ) ) && ! empty( $s['service_ghosttv'] ) ) {
-		$s['service_2'] = $s['service_ghosttv'];
+	if ( isset( $settings['renew_urls'] ) && is_array( $settings['renew_urls'] ) ) {
+		$r        = &$settings['renew_urls'];
+		$legacy_r = ghost_manager_legacy_renew_url_option_keys();
+		if ( ( ! isset( $r['sub1'] ) || '' === trim( (string) $r['sub1'] ) ) && ! empty( $r[ $legacy_r[0] ] ) ) {
+			$r['sub1'] = $r[ $legacy_r[0] ];
+		}
+		if ( ( ! isset( $r['sub2'] ) || '' === trim( (string) $r['sub2'] ) ) && ! empty( $r[ $legacy_r[1] ] ) ) {
+			$r['sub2'] = $r[ $legacy_r[1] ];
+		}
 	}
 	return $settings;
 }
@@ -594,22 +604,23 @@ function ghost_manager_apply_legacy_settings_aliases( $settings ) {
  * @return string
  */
 function ghost_manager_get_service_label( $index ) {
-	$s = ghost_manager_get_settings();
-	$str = isset( $s['strings'] ) && is_array( $s['strings'] ) ? $s['strings'] : array();
+	$s          = ghost_manager_get_settings();
+	$str        = isset( $s['strings'] ) && is_array( $s['strings'] ) ? $s['strings'] : array();
+	$legacy_lk  = ghost_manager_legacy_service_label_option_keys();
 	if ( 1 === (int) $index ) {
 		if ( ! empty( $str['service_1'] ) ) {
 			return (string) $str['service_1'];
 		}
-		if ( ! empty( $str['service_ghostplus'] ) ) {
-			return (string) $str['service_ghostplus'];
+		if ( ! empty( $str[ $legacy_lk[0] ] ) ) {
+			return (string) $str[ $legacy_lk[0] ];
 		}
 		return 'Service 1';
 	}
 	if ( ! empty( $str['service_2'] ) ) {
 		return (string) $str['service_2'];
 	}
-	if ( ! empty( $str['service_ghosttv'] ) ) {
-		return (string) $str['service_ghosttv'];
+	if ( ! empty( $str[ $legacy_lk[1] ] ) ) {
+		return (string) $str[ $legacy_lk[1] ];
 	}
 	return 'Service 2';
 }
@@ -803,9 +814,16 @@ function ghost_manager_sanitize_settings( $input ) {
 	}
 
 	if ( isset( $input['renew_urls'] ) && is_array( $input['renew_urls'] ) ) {
-		foreach ( array( 'ghostplus', 'ghosttv' ) as $svc ) {
+		foreach ( array( 'sub1', 'sub2' ) as $svc ) {
 			if ( isset( $input['renew_urls'][ $svc ] ) ) {
 				$out['renew_urls'][ $svc ] = sanitize_text_field( wp_unslash( $input['renew_urls'][ $svc ] ) );
+			}
+		}
+		$legacy_r = ghost_manager_legacy_renew_url_option_keys();
+		$map_old  = array( $legacy_r[0] => 'sub1', $legacy_r[1] => 'sub2' );
+		foreach ( $map_old as $old_key => $new_key ) {
+			if ( isset( $input['renew_urls'][ $old_key ] ) && ( ! isset( $out['renew_urls'][ $new_key ] ) || '' === trim( (string) $out['renew_urls'][ $new_key ] ) ) ) {
+				$out['renew_urls'][ $new_key ] = sanitize_text_field( wp_unslash( $input['renew_urls'][ $old_key ] ) );
 			}
 		}
 	}
@@ -908,7 +926,23 @@ function ghost_manager_sanitize_settings( $input ) {
 
 	// Drop legacy service string keys so the option stays a single source of truth.
 	if ( isset( $out['strings'] ) && is_array( $out['strings'] ) ) {
-		unset( $out['strings']['service_ghostplus'], $out['strings']['service_ghosttv'] );
+		foreach ( ghost_manager_legacy_service_label_option_keys() as $legacy_key ) {
+			unset( $out['strings'][ $legacy_key ] );
+		}
+	}
+
+	// Migrate renew path keys to sub1/sub2 and drop legacy keys from stored option.
+	if ( isset( $out['renew_urls'] ) && is_array( $out['renew_urls'] ) ) {
+		$legacy_r = ghost_manager_legacy_renew_url_option_keys();
+		if ( ( ! isset( $out['renew_urls']['sub1'] ) || '' === trim( (string) $out['renew_urls']['sub1'] ) ) && ! empty( $out['renew_urls'][ $legacy_r[0] ] ) ) {
+			$out['renew_urls']['sub1'] = $out['renew_urls'][ $legacy_r[0] ];
+		}
+		if ( ( ! isset( $out['renew_urls']['sub2'] ) || '' === trim( (string) $out['renew_urls']['sub2'] ) ) && ! empty( $out['renew_urls'][ $legacy_r[1] ] ) ) {
+			$out['renew_urls']['sub2'] = $out['renew_urls'][ $legacy_r[1] ];
+		}
+		foreach ( $legacy_r as $legacy_rk ) {
+			unset( $out['renew_urls'][ $legacy_rk ] );
+		}
 	}
 
 	return $out;

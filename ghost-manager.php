@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Ghost Manager
  * Description: Subscription account management, WooCommerce integration, and related tools.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Ghost
  * Text Domain: ghost-manager
  *
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GHOST_MANAGER_VERSION', '1.0.5' );
+define( 'GHOST_MANAGER_VERSION', '1.0.6' );
 define( 'GHOST_MANAGER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'GHOST_MANAGER_URL', plugin_dir_url( __FILE__ ) );
 
@@ -25,6 +25,7 @@ if ( ! defined( 'GHOST_MANAGER_GITHUB_REPO' ) ) {
 	define( 'GHOST_MANAGER_GITHUB_REPO', 'https://github.com/jcross-tech/ghost-manager/' );
 }
 
+require_once GHOST_MANAGER_PATH . 'includes/helpers/subscription-meta.php';
 require_once GHOST_MANAGER_PATH . 'includes/helpers/options.php';
 require_once GHOST_MANAGER_PATH . 'includes/helpers/features.php';
 require_once GHOST_MANAGER_PATH . 'includes/license/license.php';

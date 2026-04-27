@@ -76,10 +76,10 @@ function ghost_manager_handle_admin_resend() {
 	}
 
 	$user_id = isset( $_GET['user_id'] ) ? intval( $_GET['user_id'] ) : 0;
-	$type    = isset( $_GET['type'] ) ? sanitize_text_field( wp_unslash( $_GET['type'] ) ) : 'ghostplus';
+	$type    = isset( $_GET['type'] ) ? sanitize_text_field( wp_unslash( $_GET['type'] ) ) : GHOST_MANAGER_SUB_SVC1;
 	$mode    = ( isset( $_GET['mode'] ) && 'renewal' === $_GET['mode'] ) ? 'renewal' : 'details';
 
-	ghost_send_email( $user_id, $type, $mode );
+	ghost_send_email( $user_id, ghost_manager_normalize_subscription_type( $type ), $mode );
 
 	if ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
 		wp_safe_redirect( esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) );
@@ -99,21 +99,25 @@ function ghost_manager_ajax_save_account() {
 	}
 
 	$user_id = isset( $_POST['user_id'] ) ? intval( $_POST['user_id'] ) : 0;
-	$type    = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
+	$raw     = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
+	if ( '' === $raw ) {
+		wp_die();
+	}
+	$type = ghost_manager_normalize_subscription_type( $raw );
 
-	if ( 'ghostplus' === $type ) {
+	if ( GHOST_MANAGER_SUB_SVC1 === $type ) {
 		$username = isset( $_POST['username'] ) ? sanitize_text_field( wp_unslash( $_POST['username'] ) ) : '';
-		update_user_meta( $user_id, 'ghostplus_username', $username );
-		update_user_meta( $user_id, 'ghostplus_password', isset( $_POST['password'] ) ? sanitize_text_field( wp_unslash( $_POST['password'] ) ) : '' );
-		update_user_meta( $user_id, 'ghostplus_expiry', isset( $_POST['expiry'] ) ? sanitize_text_field( wp_unslash( $_POST['expiry'] ) ) : '' );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'username', $username );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'password', isset( $_POST['password'] ) ? sanitize_text_field( wp_unslash( $_POST['password'] ) ) : '' );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'expiry', isset( $_POST['expiry'] ) ? sanitize_text_field( wp_unslash( $_POST['expiry'] ) ) : '' );
 		delete_transient( 'ghost_exp_' . md5( $username ) );
 	}
 
-	if ( 'ghosttv' === $type ) {
+	if ( GHOST_MANAGER_SUB_SVC2 === $type ) {
 		$username = isset( $_POST['username'] ) ? sanitize_text_field( wp_unslash( $_POST['username'] ) ) : '';
-		update_user_meta( $user_id, 'ghosttv_username', $username );
-		update_user_meta( $user_id, 'ghosttv_password', isset( $_POST['password'] ) ? sanitize_text_field( wp_unslash( $_POST['password'] ) ) : '' );
-		update_user_meta( $user_id, 'ghosttv_expiry', isset( $_POST['expiry'] ) ? sanitize_text_field( wp_unslash( $_POST['expiry'] ) ) : '' );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'username', $username );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'password', isset( $_POST['password'] ) ? sanitize_text_field( wp_unslash( $_POST['password'] ) ) : '' );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'expiry', isset( $_POST['expiry'] ) ? sanitize_text_field( wp_unslash( $_POST['expiry'] ) ) : '' );
 		delete_transient( 'ghost_exp_' . md5( $username ) );
 	}
 
@@ -153,22 +157,24 @@ function ghost_manager_ajax_quick_add() {
 		wp_send_json_error();
 	}
 
-	if ( 'ghostplus' === $service ) {
-		update_user_meta( $user_id, 'ghostplus_username', $username );
-		update_user_meta( $user_id, 'ghostplus_password', $password );
+	$service = ghost_manager_normalize_subscription_type( $service );
+
+	if ( GHOST_MANAGER_SUB_SVC1 === $service ) {
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'username', $username );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'password', $password );
 		if ( ! $expiry ) {
 			$expiry = ghost_manager_get_xtream_expiry( $username, $password );
 		}
-		update_user_meta( $user_id, 'ghostplus_expiry', $expiry ? $expiry : '' );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'expiry', $expiry ? $expiry : '' );
 	}
 
-	if ( 'ghosttv' === $service ) {
-		update_user_meta( $user_id, 'ghosttv_username', $username );
-		update_user_meta( $user_id, 'ghosttv_password', $password );
+	if ( GHOST_MANAGER_SUB_SVC2 === $service ) {
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'username', $username );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'password', $password );
 		if ( ! $expiry ) {
 			$expiry = ghost_manager_get_xtream_expiry( $username, $password );
 		}
-		update_user_meta( $user_id, 'ghosttv_expiry', $expiry ? $expiry : '' );
+		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'expiry', $expiry ? $expiry : '' );
 	}
 
 	wp_send_json_success();
@@ -204,6 +210,8 @@ function ghost_manager_render_accounts_manager_page() {
 
 	$gp_label = ghost_manager_get_service_label( 1 );
 	$tv_label = ghost_manager_get_service_label( 2 );
+	$svc1    = GHOST_MANAGER_SUB_SVC1;
+	$svc2    = GHOST_MANAGER_SUB_SVC2;
 	?>
 	<div class="wrap ghost-accounts">
 		<h1><?php esc_html_e( 'Customer Manager', 'ghost-manager' ); ?></h1>
@@ -259,21 +267,21 @@ function ghost_manager_render_accounts_manager_page() {
 				<input type="date" name="expiry">
 			</div>
 			<select name="service">
-				<option value="ghostplus"><?php echo esc_html( $gp_label ); ?></option>
-				<option value="ghosttv"><?php echo esc_html( $tv_label ); ?></option>
+				<option value="<?php echo esc_attr( $svc1 ); ?>"><?php echo esc_html( $gp_label ); ?></option>
+				<option value="<?php echo esc_attr( $svc2 ); ?>"><?php echo esc_html( $tv_label ); ?></option>
 			</select>
 			<button class="button button-primary" type="submit">Add</button>
 		</form>
 
 		<?php
 		foreach ( $users as $user ) {
-			$gp_user = get_user_meta( $user->ID, 'ghostplus_username', true );
-			$gp_pass = get_user_meta( $user->ID, 'ghostplus_password', true );
-			$gp_exp  = ghost_manager_get_xtream_expiry( $gp_user, $gp_pass ) ?: get_user_meta( $user->ID, 'ghostplus_expiry', true );
+			$gp_user = ghost_manager_get_user_subscription_meta( $user->ID, $svc1, 'username' );
+			$gp_pass = ghost_manager_get_user_subscription_meta( $user->ID, $svc1, 'password' );
+			$gp_exp  = ghost_manager_get_xtream_expiry( $gp_user, $gp_pass ) ?: ghost_manager_get_user_subscription_meta( $user->ID, $svc1, 'expiry' );
 
-			$tv_user = get_user_meta( $user->ID, 'ghosttv_username', true );
-			$tv_pass = get_user_meta( $user->ID, 'ghosttv_password', true );
-			$tv_exp  = ghost_manager_get_xtream_expiry( $tv_user, $tv_pass ) ?: get_user_meta( $user->ID, 'ghosttv_expiry', true );
+			$tv_user = ghost_manager_get_user_subscription_meta( $user->ID, $svc2, 'username' );
+			$tv_pass = ghost_manager_get_user_subscription_meta( $user->ID, $svc2, 'password' );
+			$tv_exp  = ghost_manager_get_xtream_expiry( $tv_user, $tv_pass ) ?: ghost_manager_get_user_subscription_meta( $user->ID, $svc2, 'expiry' );
 			?>
 
 			<div class="ghost-user-card">
@@ -303,9 +311,9 @@ function ghost_manager_render_accounts_manager_page() {
 						</div>
 					</div>
 					<div class="ghost-actions">
-						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=ghostplus&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-send">📧 Send</a>
-						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=ghostplus&mode=renewal&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-renew">🔄 Renew</a>
-						<button type="button" class="button ghost-save" data-user="<?php echo esc_attr( (string) $user->ID ); ?>" data-type="ghostplus">💾 Save</button>
+						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=' . rawurlencode( $svc1 ) . '&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-send">📧 Send</a>
+						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=' . rawurlencode( $svc1 ) . '&mode=renewal&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-renew">🔄 Renew</a>
+						<button type="button" class="button ghost-save" data-user="<?php echo esc_attr( (string) $user->ID ); ?>" data-type="<?php echo esc_attr( $svc1 ); ?>">💾 Save</button>
 					</div>
 				</div>
 
@@ -326,9 +334,9 @@ function ghost_manager_render_accounts_manager_page() {
 						</div>
 					</div>
 					<div class="ghost-actions">
-						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=ghosttv&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-send">📧 Send</a>
-						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=ghosttv&mode=renewal&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-renew">🔄 Renew</a>
-						<button type="button" class="button ghost-save" data-user="<?php echo esc_attr( (string) $user->ID ); ?>" data-type="ghosttv">💾 Save</button>
+						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=' . rawurlencode( $svc2 ) . '&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-send">📧 Send</a>
+						<a href="<?php echo esc_url( admin_url( 'admin-post.php?action=ghost_resend&type=' . rawurlencode( $svc2 ) . '&mode=renewal&user_id=' . $user->ID ) ); ?>" class="button ghost-btn-renew">🔄 Renew</a>
+						<button type="button" class="button ghost-save" data-user="<?php echo esc_attr( (string) $user->ID ); ?>" data-type="<?php echo esc_attr( $svc2 ); ?>">💾 Save</button>
 					</div>
 				</div>
 			</div>
@@ -338,6 +346,8 @@ function ghost_manager_render_accounts_manager_page() {
 	</div>
 
 	<script>
+	const GM_SUB_SVC1 = <?php echo wp_json_encode( $svc1 ); ?>;
+	const GM_SUB_SVC2 = <?php echo wp_json_encode( $svc2 ); ?>;
 	document.querySelectorAll(".ghost-toggle").forEach((btn, index) => {
 		btn.addEventListener("click", function(){
 			let panels = this.parentNode.querySelectorAll(".ghost-panel");
@@ -351,9 +361,9 @@ function ghost_manager_render_accounts_manager_page() {
 			let parent = this.closest(".ghost-user-card");
 			let userId = this.dataset.user;
 			let type = this.dataset.type;
-			let username = parent.querySelector(type === "ghostplus" ? ".gp-user" : ".tv-user").value;
-			let password = parent.querySelector(type === "ghostplus" ? ".gp-pass" : ".tv-pass").value;
-			let expiry  = parent.querySelector(type === "ghostplus" ? ".gp-exp"  : ".tv-exp").value;
+			let username = parent.querySelector(type === GM_SUB_SVC1 ? ".gp-user" : ".tv-user").value;
+			let password = parent.querySelector(type === GM_SUB_SVC1 ? ".gp-pass" : ".tv-pass").value;
+			let expiry  = parent.querySelector(type === GM_SUB_SVC1 ? ".gp-exp"  : ".tv-exp").value;
 			fetch(ajaxurl, {
 				method: "POST",
 				headers: {"Content-Type": "application/x-www-form-urlencoded"},

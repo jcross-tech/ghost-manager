@@ -109,11 +109,11 @@ function ghost_manager_build_password_reset_email_message( $brand, $reset_link )
  * Send service 1 / service 2 subscription details email.
  *
  * @param int    $user_id User ID.
- * @param string $type    ghostplus|ghosttv.
+ * @param string $type    svc1|svc2 (legacy bookmark types are normalized).
  * @param string $mode    details|renewal|warning.
  * @param array  $opts    Optional. For warning: subject, intro, email_title from ghost_manager_get_expiry_warning_email_copy().
  */
-function ghost_manager_send_email( $user_id, $type = 'ghostplus', $mode = 'details', $opts = array() ) {
+function ghost_manager_send_email( $user_id, $type = GHOST_MANAGER_SUB_SVC1, $mode = 'details', $opts = array() ) {
 	if ( ! ghost_manager_is_feature_enabled( 'email_system' ) ) {
 		return;
 	}
@@ -123,22 +123,16 @@ function ghost_manager_send_email( $user_id, $type = 'ghostplus', $mode = 'detai
 		return;
 	}
 
-	$gp = ghost_manager_get_service_label( 1 );
-	$gt = ghost_manager_get_service_label( 2 );
+	$type      = ghost_manager_normalize_subscription_type( $type );
+	$svc_index = ghost_manager_subscription_index( $type );
+	$label     = ghost_manager_get_service_label( $svc_index );
 
 	$not_set = ghost_manager_get( 'emails.service.value_not_set', 'Not set' );
 
-	if ( 'ghosttv' === $type ) {
-		$username   = get_user_meta( $user_id, 'ghosttv_username', true );
-		$password   = get_user_meta( $user_id, 'ghosttv_password', true );
-		$expiry     = get_user_meta( $user_id, 'ghosttv_expiry', true );
-		$base_title = $gt . ' Subscription';
-	} else {
-		$username   = get_user_meta( $user_id, 'ghostplus_username', true );
-		$password   = get_user_meta( $user_id, 'ghostplus_password', true );
-		$expiry     = get_user_meta( $user_id, 'ghostplus_expiry', true );
-		$base_title = $gp . ' Subscription';
-	}
+	$username   = ghost_manager_get_user_subscription_meta( $user_id, $type, 'username' );
+	$password   = ghost_manager_get_user_subscription_meta( $user_id, $type, 'password' );
+	$expiry     = ghost_manager_get_user_subscription_meta( $user_id, $type, 'expiry' );
+	$base_title = $label . ' Subscription';
 
 	if ( ! $username ) {
 		$username = $not_set;
@@ -232,7 +226,7 @@ if ( ! function_exists( 'ghost_send_email' ) ) {
 	 * @param string $type    Service key.
 	 * @param string $mode    Email mode.
 	 */
-	function ghost_send_email( $user_id, $type = 'ghostplus', $mode = 'details', $opts = array() ) {
+	function ghost_send_email( $user_id, $type = GHOST_MANAGER_SUB_SVC1, $mode = 'details', $opts = array() ) {
 		ghost_manager_send_email( $user_id, $type, $mode, $opts );
 	}
 }
@@ -274,8 +268,8 @@ function ghost_manager_run_expiry_cron() {
 
 	foreach ( $users as $user ) {
 		$uid = $user->ID;
-		foreach ( array( 'ghostplus', 'ghosttv' ) as $service ) {
-			$expiry = get_user_meta( $uid, "{$service}_expiry", true );
+		foreach ( array( GHOST_MANAGER_SUB_SVC1, GHOST_MANAGER_SUB_SVC2 ) as $service ) {
+			$expiry = ghost_manager_get_user_subscription_meta( $uid, $service, 'expiry' );
 			if ( ! $expiry ) {
 				continue;
 			}
@@ -290,16 +284,14 @@ function ghost_manager_run_expiry_cron() {
 				continue;
 			}
 
-			$base_title = ( 'ghosttv' === $service ) ? ( $gt . ' Subscription' ) : ( $gp . ' Subscription' );
+			$base_title = ( GHOST_MANAGER_SUB_SVC2 === $service ? $gt : $gp ) . ' Subscription';
 
 			if ( $multi ) {
 				if ( empty( $thresholds ) ) {
 					continue;
 				}
-				$snap_key = "{$service}_expiry_reminder_snapshot";
-				$sent_key = "{$service}_expiry_reminder_days_sent";
-				$snapshot = get_user_meta( $uid, $snap_key, true );
-				$sent     = get_user_meta( $uid, $sent_key, true );
+				$snapshot = ghost_manager_get_subscription_cron_meta( $uid, $service, 'expiry_reminder_snapshot' );
+				$sent     = ghost_manager_get_subscription_cron_meta( $uid, $service, 'expiry_reminder_days_sent' );
 				if ( ! is_array( $sent ) ) {
 					$sent = array();
 				}
@@ -317,14 +309,14 @@ function ghost_manager_run_expiry_cron() {
 					}
 				}
 
-				update_user_meta( $uid, $snap_key, $expiry );
-				update_user_meta( $uid, $sent_key, $sent );
+				ghost_manager_set_subscription_cron_meta( $uid, $service, 'expiry_reminder_snapshot', $expiry );
+				ghost_manager_set_subscription_cron_meta( $uid, $service, 'expiry_reminder_days_sent', $sent );
 			} else {
-				$warned = get_user_meta( $uid, "{$service}_warned", true );
+				$warned = ghost_manager_get_subscription_cron_meta( $uid, $service, 'warned' );
 				if ( $days <= $win_max && $days >= $win_min && ! $warned ) {
 					$copy = ghost_manager_get_expiry_warning_email_copy( $base_title, $days );
 					ghost_manager_send_email( $uid, $service, 'warning', $copy );
-					update_user_meta( $uid, "{$service}_warned", true );
+					ghost_manager_set_subscription_cron_meta( $uid, $service, 'warned', true );
 				}
 			}
 		}
@@ -478,8 +470,8 @@ function ghost_manager_account_dashboard_subscriptions() {
 	$gt = ghost_manager_get_service_label( 2 );
 
 	$services = array(
-		$gp => 'ghostplus',
-		$gt => 'ghosttv',
+		$gp => GHOST_MANAGER_SUB_SVC1,
+		$gt => GHOST_MANAGER_SUB_SVC2,
 	);
 
 	$title   = ghost_manager_get( 'strings.subscription_details_title', 'Subscription Details' );
@@ -491,14 +483,14 @@ function ghost_manager_account_dashboard_subscriptions() {
 	$has_any = false;
 
 	$renew_map = array(
-		'ghostplus' => ghost_manager_get( 'renew_urls.ghostplus', '/product/service-one/' ),
-		'ghosttv'   => ghost_manager_get( 'renew_urls.ghosttv', '/product/service-two/' ),
+		GHOST_MANAGER_SUB_SVC1 => ghost_manager_get( 'renew_urls.sub1', '/product/service-one/' ),
+		GHOST_MANAGER_SUB_SVC2 => ghost_manager_get( 'renew_urls.sub2', '/product/service-two/' ),
 	);
 
 	foreach ( $services as $label => $key ) {
-		$username = get_user_meta( $user_id, "{$key}_username", true );
-		$password = get_user_meta( $user_id, "{$key}_password", true );
-		$expiry   = get_user_meta( $user_id, "{$key}_expiry", true );
+		$username = ghost_manager_get_user_subscription_meta( $user_id, $key, 'username' );
+		$password = ghost_manager_get_user_subscription_meta( $user_id, $key, 'password' );
+		$expiry   = ghost_manager_get_user_subscription_meta( $user_id, $key, 'expiry' );
 
 		if ( ! $username ) {
 			continue;

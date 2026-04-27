@@ -45,10 +45,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 <table class="form-table" role="presentation">
 	<tr>
 		<th><label for="gm-renew-gp"><?php echo esc_html( sprintf( __( 'Service %d renew path', 'ghost-manager' ), 1 ) ); ?></label></th>
-		<td><input class="regular-text" id="gm-renew-gp" type="text" name="ghost_manager_settings[renew_urls][ghostplus]" value="<?php echo esc_attr( $settings['renew_urls']['ghostplus'] ); ?>" /></td>
+		<td><input class="regular-text" id="gm-renew-gp" type="text" name="ghost_manager_settings[renew_urls][sub1]" value="<?php echo esc_attr( $settings['renew_urls']['sub1'] ?? '' ); ?>" /></td>
 	</tr>
 	<tr>
 		<th><label for="gm-renew-tv"><?php echo esc_html( sprintf( __( 'Service %d renew path', 'ghost-manager' ), 2 ) ); ?></label></th>
-		<td><input class="regular-text" id="gm-renew-tv" type="text" name="ghost_manager_settings[renew_urls][ghosttv]" value="<?php echo esc_attr( $settings['renew_urls']['ghosttv'] ); ?>" /></td>
+		<td><input class="regular-text" id="gm-renew-tv" type="text" name="ghost_manager_settings[renew_urls][sub2]" value="<?php echo esc_attr( $settings['renew_urls']['sub2'] ?? '' ); ?>" /></td>
 	</tr>
 </table>
