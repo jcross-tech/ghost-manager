@@ -185,7 +185,7 @@ function ghost_manager_render_accounts_manager_page() {
 
 	$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 
-	$exclude_login  = ghost_manager_get( 'integrations.accounts_exclude_login', 'gtvadmin' );
+	$exclude_login  = ghost_manager_get( 'integrations.accounts_exclude_login', '' );
 	$admin          = get_user_by( 'login', $exclude_login );
 	$exclude_id     = $admin ? $admin->ID : 0;
 	$reseller_role  = sanitize_key( (string) ghost_manager_get( 'roles.reseller', 'reseller' ) );

@@ -106,7 +106,7 @@ function ghost_manager_build_password_reset_email_message( $brand, $reset_link )
 }
 
 /**
- * Send Ghost+ / Ghost TV details email.
+ * Send service 1 / service 2 subscription details email.
  *
  * @param int    $user_id User ID.
  * @param string $type    ghostplus|ghosttv.
@@ -397,7 +397,7 @@ function ghost_manager_wp_new_user_notification_email( $email, $user, $blogname 
 		$reset_link = $matches[0];
 	}
 
-	$brand = ghost_manager_get( 'strings.brand_name', 'Ghost Pay' );
+	$brand = ghost_manager_get( 'strings.brand_name', 'Your brand' );
 
 	add_filter(
 		'wp_mail_content_type',
@@ -406,7 +406,7 @@ function ghost_manager_wp_new_user_notification_email( $email, $user, $blogname 
 		}
 	);
 
-	$email['subject'] = ghost_manager_get( 'strings.new_user_email_subject', 'Your Ghost Pay Account Setup' );
+	$email['subject'] = ghost_manager_get( 'strings.new_user_email_subject', 'Your account setup' );
 	$email['message'] = ghost_manager_build_new_user_email_message( $brand, $reset_link );
 
 	return $email;
@@ -430,7 +430,7 @@ function ghost_manager_retrieve_password_message( $message, $key, $user_login, $
 
 	$reset_link = site_url( 'wp-login.php?action=rp&key=' . $key . '&login=' . rawurlencode( $user_login ) );
 
-	$brand = ghost_manager_get( 'strings.brand_name', 'Ghost Pay' );
+	$brand = ghost_manager_get( 'strings.brand_name', 'Your brand' );
 
 	add_filter(
 		'wp_mail_content_type',

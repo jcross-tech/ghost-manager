@@ -254,7 +254,8 @@ function ghost_manager_default_password_reset_body_html() {
 }
 
 /**
- * Default settings (aligned with Downloads code-snippets.php).
+ * Default settings for new installs (neutral placeholders — no live business URLs or brand names in repo).
+ * Existing sites keep values stored in wp_options; merge does not overwrite saved keys.
  *
  * @return array
  */
@@ -276,10 +277,10 @@ function ghost_manager_default_settings() {
 			'checkout_payment_info_box'         => true,
 		),
 		'strings'  => array(
-			'brand_name'                        => 'Ghost Pay',
-			'service_1'                         => 'Ghost+',
-			'service_2'                         => 'Ghost TV',
-			'new_user_email_subject'            => 'Your Ghost Pay Account Setup',
+			'brand_name'                        => 'Your brand',
+			'service_1'                         => 'Service 1',
+			'service_2'                         => 'Service 2',
+			'new_user_email_subject'            => 'Your account setup',
 			'password_reset_email_subject'      => 'Password Reset',
 			'unique_email_cart_error'           => 'This email is already used for another line of this product in your cart.',
 			'subscription_details_title'        => 'Subscription Details',
@@ -292,8 +293,8 @@ function ghost_manager_default_settings() {
 			'billing_email_required'            => 'Please select an email for order confirmation.',
 			'discord_tooltip'                   => '👋 Need help with anything?',
 			'discord_popup_title'               => 'Get support',
-			'discord_popup_body'                => 'Join our Discord for help with subscriptions, setup, and the latest updates.',
-			'discord_cta_label'                 => 'Join our Discord',
+			'discord_popup_body'                => 'Join our community for help with subscriptions, setup, and updates.',
+			'discord_cta_label'                 => 'Get help',
 			'subscription_account_email_label'  => 'Please enter your email',
 			'checkout_select_email_placeholder' => 'Select an email',
 			'order_line_meta_account_email'     => 'Account Email',
@@ -306,17 +307,17 @@ function ghost_manager_default_settings() {
 			'account_card_label_expiry'       => 'Expiry',
 		),
 		'urls'     => array(
-			'logo'                 => 'https://ghostpay.store/wp-content/uploads/2026/03/Ghostpaylogoheader-1.png',
-			'discord'              => 'https://discord.gg/w4TCzyHNb9',
+			'logo'                 => 'https://example.com/wp-content/uploads/logo.png',
+			'discord'              => 'https://example.com/your-support-invite',
 			'my_account_relative'  => '/my-account/',
-			'xtream_player_api'    => 'http://storagerevision.org/player_api.php',
-			'guide_crypto_com'     => 'https://ghostpay.store/guides/crypto-com-setup-guide/',
-			'guide_revolut'        => 'https://ghostpay.store/guides/revolut-setup-guide/',
-			'guide_transak'        => 'https://ghostpay.store/guides/transak-setup-guide/',
+			'xtream_player_api'    => 'https://example.com/player_api.php',
+			'guide_crypto_com'     => 'https://example.com/guides/crypto/',
+			'guide_revolut'        => 'https://example.com/guides/revolut/',
+			'guide_transak'        => 'https://example.com/guides/transak/',
 		),
 		'renew_urls' => array(
-			'ghostplus' => '/product/ghost-plus/',
-			'ghosttv'   => '/product/ghost-tv/',
+			'ghostplus' => '/product/service-one/',
+			'ghosttv'   => '/product/service-two/',
 		),
 		'taxonomies' => array(
 			'subscriptions_slug' => 'subscriptions',
@@ -326,24 +327,24 @@ function ghost_manager_default_settings() {
 			'reseller' => 'reseller',
 		),
 		'integrations' => array(
-			'accounts_exclude_login'       => 'gtvadmin',
+			'accounts_exclude_login'       => '',
 			'checkout_hosted_gateway_id'   => '',
 		),
 		'payment_box' => array(
 			'title'                => '💳 Payment Options',
-			'intro_html'           => 'We recommend using <strong>Crypto.com</strong> at checkout — the easiest and fastest way to complete your purchase.',
-			'recommended_title'    => '✅ Recommended: Crypto.com',
+			'intro_html'           => 'Review the payment options at checkout and follow your provider’s steps to complete your purchase.',
+			'recommended_title'    => '✅ Recommended method',
 			'bullet_1'             => 'No account or app required',
 			'bullet_2'             => 'No KYC required',
-			'bullet_3'             => 'No 24-hour cooldown (as of 04/2026)',
+			'bullet_3'             => 'Check provider terms for limits or cooldowns',
 			'bullet_4'             => 'Instant checkout with Card, Apple Pay, or Google Pay',
 			'follow_guides'        => 'Follow a guide below if needed:',
-			'crypto_button'        => '⚡ Crypto.com Guide',
-			'crypto_helper'        => 'Fastest & easiest method. No setup required.',
-			'revolut_button'       => '📘 Revolut Guide',
-			'revolut_helper'       => 'Best if you already have a Revolut account.',
-			'transak_button'       => '📘 Transak Guide',
-			'transak_helper'       => 'Alternative option if needed.',
+			'crypto_button'        => '⚡ Payment guide A',
+			'crypto_helper'        => 'Short note for your primary checkout method.',
+			'revolut_button'       => '📘 Payment guide B',
+			'revolut_helper'       => 'Short note for an alternate method.',
+			'transak_button'       => '📘 Payment guide C',
+			'transak_helper'       => 'Short note for another option.',
 		),
 		'emails'     => array(
 			'service' => array(
@@ -602,7 +603,7 @@ function ghost_manager_get_service_label( $index ) {
 		if ( ! empty( $str['service_ghostplus'] ) ) {
 			return (string) $str['service_ghostplus'];
 		}
-		return 'Ghost+';
+		return 'Service 1';
 	}
 	if ( ! empty( $str['service_2'] ) ) {
 		return (string) $str['service_2'];
@@ -610,7 +611,7 @@ function ghost_manager_get_service_label( $index ) {
 	if ( ! empty( $str['service_ghosttv'] ) ) {
 		return (string) $str['service_ghosttv'];
 	}
-	return 'Ghost TV';
+	return 'Service 2';
 }
 
 /**
@@ -712,7 +713,7 @@ function ghost_manager_parse_reminder_days_csv( $csv ) {
 /**
  * Subject, intro, and display title for expiry warning emails (cron + optional overrides).
  *
- * @param string $base_title      e.g. "Ghost+ Subscription".
+ * @param string $base_title      e.g. "Service 1 Subscription".
  * @param int    $days_remaining  Full days until expiry (floor).
  * @return array{subject:string,intro:string,email_title:string}
  */

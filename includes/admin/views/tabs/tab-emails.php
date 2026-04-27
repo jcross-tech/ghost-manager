@@ -27,8 +27,8 @@ $pr   = $settings['emails']['password_reset'];
 	</tr>
 </table>
 
-<h2 class="title"><?php esc_html_e( 'Service subscription emails (Ghost+ / Ghost TV)', 'ghost-manager' ); ?></h2>
-<p class="description"><?php esc_html_e( 'Subjects: {{base_title}} (e.g. Ghost+ Subscription), {{email_title}} (full heading). Warning subject and intro also support {{days_remaining}} (see Expiry cron tab for schedule).', 'ghost-manager' ); ?></p>
+<h2 class="title"><?php esc_html_e( 'Service subscription emails (Service 1 / Service 2)', 'ghost-manager' ); ?></h2>
+<p class="description"><?php esc_html_e( 'Subjects: {{base_title}} (e.g. Service 1 Subscription), {{email_title}} (full heading). Warning subject and intro also support {{days_remaining}} (see Expiry cron tab for schedule).', 'ghost-manager' ); ?></p>
 <table class="form-table" role="presentation">
 	<tr>
 		<th><label for="gm-svc-subj-d"><?php esc_html_e( 'Subject (account details)', 'ghost-manager' ); ?></label></th>
