@@ -491,8 +491,8 @@ function ghost_manager_account_dashboard_subscriptions() {
 	$has_any = false;
 
 	$renew_map = array(
-		'ghostplus' => ghost_manager_get( 'renew_urls.ghostplus', '/product/ghost-plus/' ),
-		'ghosttv'   => ghost_manager_get( 'renew_urls.ghosttv', '/product/ghost-tv/' ),
+		'ghostplus' => ghost_manager_get( 'renew_urls.ghostplus', '/product/service-one/' ),
+		'ghosttv'   => ghost_manager_get( 'renew_urls.ghosttv', '/product/service-two/' ),
 	);
 
 	foreach ( $services as $label => $key ) {
