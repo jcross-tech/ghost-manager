@@ -19,6 +19,90 @@ function ghost_set_html_mail() {
 }
 
 /**
+ * Fetch expiry date from Xtream-style player API.
+ *
+ * @param string $username Username.
+ * @param string $password Password.
+ * @return string|false Y-m-d or false.
+ */
+function ghost_manager_get_xtream_expiry( $username, $password ) {
+	if ( ! $username || ! $password ) {
+		return false;
+	}
+
+	$base = ghost_manager_get( 'urls.xtream_player_api' );
+	if ( ! $base ) {
+		return false;
+	}
+
+	$url = add_query_arg(
+		array(
+			'username' => $username,
+			'password' => $password,
+		),
+		$base
+	);
+
+	$response = wp_remote_get(
+		$url,
+		array(
+			'timeout' => 10,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return false;
+	}
+
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+	if ( ! isset( $data['user_info']['exp_date'] ) ) {
+		return false;
+	}
+
+	return date( 'Y-m-d', (int) $data['user_info']['exp_date'] );
+}
+
+if ( ! function_exists( 'ghost_get_xtream_expiry' ) ) {
+	/**
+	 * Back-compat alias.
+	 *
+	 * @param string $username Username.
+	 * @param string $password Password.
+	 * @return string|false
+	 */
+	function ghost_get_xtream_expiry( $username, $password ) {
+		return ghost_manager_get_xtream_expiry( $username, $password );
+	}
+}
+
+/**
+ * Resolve subscription expiry for display/email: live API when possible, else stored meta.
+ *
+ * @param int    $user_id   User ID.
+ * @param string $canonical svc1|svc2.
+ * @return string Stored or API expiry (Y-m-d or whatever is in meta); empty string if unset.
+ */
+function ghost_manager_resolve_subscription_expiry_for_messaging( $user_id, $canonical ) {
+	$username = ghost_manager_get_user_subscription_meta( $user_id, $canonical, 'username' );
+	$password = ghost_manager_get_user_subscription_meta( $user_id, $canonical, 'password' );
+	$stored   = ghost_manager_get_user_subscription_meta( $user_id, $canonical, 'expiry' );
+
+	if ( $username && $password ) {
+		$from_api = ghost_manager_get_xtream_expiry( $username, $password );
+		if ( $from_api ) {
+			if ( (string) $from_api !== (string) $stored ) {
+				ghost_manager_update_user_subscription_meta( $user_id, $canonical, 'expiry', $from_api );
+				delete_transient( 'ghost_exp_' . md5( $username ) );
+			}
+			return $from_api;
+		}
+	}
+
+	return is_string( $stored ) ? $stored : '';
+}
+
+/**
  * HTML body for new-user notification from settings.
  *
  * @param string $brand      Brand name (plain).
@@ -131,7 +215,7 @@ function ghost_manager_send_email( $user_id, $type = GHOST_MANAGER_SUB_SVC1, $mo
 
 	$username   = ghost_manager_get_user_subscription_meta( $user_id, $type, 'username' );
 	$password   = ghost_manager_get_user_subscription_meta( $user_id, $type, 'password' );
-	$expiry     = ghost_manager_get_user_subscription_meta( $user_id, $type, 'expiry' );
+	$expiry     = ghost_manager_resolve_subscription_expiry_for_messaging( $user_id, $type );
 	$base_title = $label . ' Subscription';
 
 	if ( ! $username ) {

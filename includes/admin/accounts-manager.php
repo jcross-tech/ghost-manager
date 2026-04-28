@@ -10,64 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Fetch expiry date from Xtream-style player API.
- *
- * @param string $username Username.
- * @param string $password Password.
- * @return string|false Y-m-d or false.
- */
-function ghost_manager_get_xtream_expiry( $username, $password ) {
-	if ( ! $username || ! $password ) {
-		return false;
-	}
-
-	$base = ghost_manager_get( 'urls.xtream_player_api' );
-	if ( ! $base ) {
-		return false;
-	}
-
-	$url = add_query_arg(
-		array(
-			'username' => $username,
-			'password' => $password,
-		),
-		$base
-	);
-
-	$response = wp_remote_get(
-		$url,
-		array(
-			'timeout' => 10,
-		)
-	);
-
-	if ( is_wp_error( $response ) ) {
-		return false;
-	}
-
-	$data = json_decode( wp_remote_retrieve_body( $response ), true );
-
-	if ( ! isset( $data['user_info']['exp_date'] ) ) {
-		return false;
-	}
-
-	return date( 'Y-m-d', (int) $data['user_info']['exp_date'] );
-}
-
-if ( ! function_exists( 'ghost_get_xtream_expiry' ) ) {
-	/**
-	 * Back-compat alias.
-	 *
-	 * @param string $username Username.
-	 * @param string $password Password.
-	 * @return string|false
-	 */
-	function ghost_get_xtream_expiry( $username, $password ) {
-		return ghost_manager_get_xtream_expiry( $username, $password );
-	}
-}
-
-/**
  * Resend credentials via admin-post (matches snippet action name).
  */
 function ghost_manager_handle_admin_resend() {
