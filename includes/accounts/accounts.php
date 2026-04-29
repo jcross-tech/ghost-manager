@@ -21,16 +21,17 @@ function ghost_set_html_mail() {
 /**
  * Fetch expiry date from Xtream-style player API.
  *
- * @param string $username Username.
- * @param string $password Password.
+ * @param string $username    Username.
+ * @param string $password    Password.
+ * @param string $subscription svc1|svc2 (selects API base URL).
  * @return string|false Y-m-d or false.
  */
-function ghost_manager_get_xtream_expiry( $username, $password ) {
+function ghost_manager_get_xtream_expiry( $username, $password, $subscription = GHOST_MANAGER_SUB_SVC1 ) {
 	if ( ! $username || ! $password ) {
 		return false;
 	}
 
-	$base = ghost_manager_get( 'urls.xtream_player_api' );
+	$base = ghost_manager_resolve_xtream_api_url_for_service( $subscription );
 	if ( ! $base ) {
 		return false;
 	}
@@ -89,7 +90,7 @@ function ghost_manager_resolve_subscription_expiry_for_messaging( $user_id, $can
 	$stored   = ghost_manager_get_user_subscription_meta( $user_id, $canonical, 'expiry' );
 
 	if ( $username && $password ) {
-		$from_api = ghost_manager_get_xtream_expiry( $username, $password );
+		$from_api = ghost_manager_get_xtream_expiry( $username, $password, $canonical );
 		if ( $from_api ) {
 			if ( (string) $from_api !== (string) $stored ) {
 				ghost_manager_update_user_subscription_meta( $user_id, $canonical, 'expiry', $from_api );
@@ -133,8 +134,10 @@ function ghost_manager_build_new_user_email_message( $brand, $reset_link ) {
 		$body_tpl = ghost_manager_default_new_user_body_html();
 	}
 
-	$vars = array(
-		'logo_url'           => esc_url( ghost_manager_get( 'urls.logo' ) ),
+	$logo_u = esc_url( ghost_manager_get( 'urls.logo' ) );
+	$vars   = array(
+		'logo_block'         => ghost_manager_email_logo_block_html(),
+		'logo_url'           => $logo_u,
 		'brand'              => $brand_e,
 		'reset_link_url'     => $reset_url,
 		'reset_link_display' => $reset_disp,
@@ -173,8 +176,10 @@ function ghost_manager_build_password_reset_email_message( $brand, $reset_link )
 		$body_tpl = ghost_manager_default_password_reset_body_html();
 	}
 
-	$vars = array(
-		'logo_url'           => esc_url( ghost_manager_get( 'urls.logo' ) ),
+	$logo_u = esc_url( ghost_manager_get( 'urls.logo' ) );
+	$vars   = array(
+		'logo_block'         => ghost_manager_email_logo_block_html(),
+		'logo_url'           => $logo_u,
 		'brand'              => $brand_e,
 		'reset_link_url'     => $reset_url,
 		'reset_link_display' => $reset_disp,
@@ -281,6 +286,7 @@ function ghost_manager_send_email( $user_id, $type = GHOST_MANAGER_SUB_SVC1, $mo
 	$logo = esc_url( ghost_manager_get( 'urls.logo' ) );
 
 	$body_vars = array(
+		'logo_block'     => ghost_manager_email_logo_block_html(),
 		'logo_url'       => $logo,
 		'title'          => esc_html( $title ),
 		'intro'          => wp_kses_post( $intro ),

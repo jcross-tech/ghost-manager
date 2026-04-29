@@ -78,7 +78,7 @@ $pr   = $settings['emails']['password_reset'];
 		<th><label for="gm-svc-body"><?php esc_html_e( 'HTML body template', 'ghost-manager' ); ?></label></th>
 		<td>
 			<textarea class="large-text code" rows="14" id="gm-svc-body" name="ghost_manager_settings[emails][service][body_html]"><?php echo esc_textarea( $svc['body_html'] ); ?></textarea>
-			<p class="description"><?php esc_html_e( 'Placeholders: {{logo_url}}, {{title}}, {{intro}}, {{username}}, {{password}}, {{expiry}}, {{label_username}}, {{label_password}}, {{label_expiry}}, {{footer_note}}', 'ghost-manager' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Placeholders: {{logo_block}} (header image, omit if no logo URL), {{logo_url}}, {{title}}, {{intro}}, {{username}}, {{password}}, {{expiry}}, {{label_username}}, {{label_password}}, {{label_expiry}}, {{footer_note}}', 'ghost-manager' ); ?></p>
 		</td>
 	</tr>
 </table>
@@ -138,7 +138,7 @@ $pr   = $settings['emails']['password_reset'];
 		<th><label for="gm-nu-body"><?php esc_html_e( 'Full HTML body (overrides structured fields above)', 'ghost-manager' ); ?></label></th>
 		<td>
 			<textarea class="large-text code" rows="16" id="gm-nu-body" name="ghost_manager_settings[emails][new_user][body_html]"><?php echo esc_textarea( $nu['body_html'] ); ?></textarea>
-			<p class="description"><?php esc_html_e( 'Placeholders: {{logo_url}}, {{brand}}, {{reset_link_url}}, {{reset_link_display}}, {{important_box}}, {{greeting}}, {{intro}}, {{button_label}}, {{fallback_text}}, {{benefits_intro}}, {{benefits_list}}', 'ghost-manager' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Placeholders: {{logo_block}}, {{logo_url}}, {{brand}}, {{reset_link_url}}, {{reset_link_display}}, {{important_box}}, {{greeting}}, {{intro}}, {{button_label}}, {{fallback_text}}, {{benefits_intro}}, {{benefits_list}}', 'ghost-manager' ); ?></p>
 		</td>
 	</tr>
 </table>
@@ -173,7 +173,7 @@ $pr   = $settings['emails']['password_reset'];
 		<th><label for="gm-pr-body"><?php esc_html_e( 'Full HTML body (overrides structured fields above)', 'ghost-manager' ); ?></label></th>
 		<td>
 			<textarea class="large-text code" rows="14" id="gm-pr-body" name="ghost_manager_settings[emails][password_reset][body_html]"><?php echo esc_textarea( $pr['body_html'] ); ?></textarea>
-			<p class="description"><?php esc_html_e( 'Placeholders: {{logo_url}}, {{brand}}, {{reset_link_url}}, {{reset_link_display}}, {{heading}}, {{greeting}}, {{intro}}, {{button_label}}, {{footer_text}}, {{link_intro}}', 'ghost-manager' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Placeholders: {{logo_block}}, {{logo_url}}, {{brand}}, {{reset_link_url}}, {{reset_link_display}}, {{heading}}, {{greeting}}, {{intro}}, {{button_label}}, {{footer_text}}, {{link_intro}}', 'ghost-manager' ); ?></p>
 		</td>
 	</tr>
 </table>

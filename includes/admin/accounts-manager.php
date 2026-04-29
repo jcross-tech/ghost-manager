@@ -105,7 +105,7 @@ function ghost_manager_ajax_quick_add() {
 		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'username', $username );
 		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'password', $password );
 		if ( ! $expiry ) {
-			$expiry = ghost_manager_get_xtream_expiry( $username, $password );
+			$expiry = ghost_manager_get_xtream_expiry( $username, $password, GHOST_MANAGER_SUB_SVC1 );
 		}
 		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC1, 'expiry', $expiry ? $expiry : '' );
 	}
@@ -114,7 +114,7 @@ function ghost_manager_ajax_quick_add() {
 		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'username', $username );
 		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'password', $password );
 		if ( ! $expiry ) {
-			$expiry = ghost_manager_get_xtream_expiry( $username, $password );
+			$expiry = ghost_manager_get_xtream_expiry( $username, $password, GHOST_MANAGER_SUB_SVC2 );
 		}
 		ghost_manager_update_user_subscription_meta( $user_id, GHOST_MANAGER_SUB_SVC2, 'expiry', $expiry ? $expiry : '' );
 	}
@@ -219,11 +219,11 @@ function ghost_manager_render_accounts_manager_page() {
 		foreach ( $users as $user ) {
 			$gp_user = ghost_manager_get_user_subscription_meta( $user->ID, $svc1, 'username' );
 			$gp_pass = ghost_manager_get_user_subscription_meta( $user->ID, $svc1, 'password' );
-			$gp_exp  = ghost_manager_get_xtream_expiry( $gp_user, $gp_pass ) ?: ghost_manager_get_user_subscription_meta( $user->ID, $svc1, 'expiry' );
+			$gp_exp  = ghost_manager_get_xtream_expiry( $gp_user, $gp_pass, $svc1 ) ?: ghost_manager_get_user_subscription_meta( $user->ID, $svc1, 'expiry' );
 
 			$tv_user = ghost_manager_get_user_subscription_meta( $user->ID, $svc2, 'username' );
 			$tv_pass = ghost_manager_get_user_subscription_meta( $user->ID, $svc2, 'password' );
-			$tv_exp  = ghost_manager_get_xtream_expiry( $tv_user, $tv_pass ) ?: ghost_manager_get_user_subscription_meta( $user->ID, $svc2, 'expiry' );
+			$tv_exp  = ghost_manager_get_xtream_expiry( $tv_user, $tv_pass, $svc2 ) ?: ghost_manager_get_user_subscription_meta( $user->ID, $svc2, 'expiry' );
 			?>
 
 			<div class="ghost-user-card">

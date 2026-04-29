@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Ghost Manager
  * Description: Subscription account management, WooCommerce integration, and related tools.
- * Version: 1.0.7
+ * Version: 1.1.0
  * Author: Ghost
  * Text Domain: ghost-manager
  *
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GHOST_MANAGER_VERSION', '1.0.7' );
+define( 'GHOST_MANAGER_VERSION', '1.1.0' );
 define( 'GHOST_MANAGER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'GHOST_MANAGER_URL', plugin_dir_url( __FILE__ ) );
 

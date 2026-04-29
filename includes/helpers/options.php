@@ -95,7 +95,7 @@ function ghost_manager_read_save_trace_log( $max_bytes = 1048576 ) {
 }
 
 /**
- * Default HTML for service subscription emails (placeholders: {{logo_url}}, {{title}}, {{intro}}, {{username}}, {{password}}, {{expiry}}, {{label_username}}, {{label_password}}, {{label_expiry}}, {{footer_note}}).
+ * Default HTML for service subscription emails (placeholders: {{logo_block}}, {{logo_url}}, {{title}}, {{intro}}, {{username}}, {{password}}, {{expiry}}, {{label_username}}, {{label_password}}, {{label_expiry}}, {{footer_note}}).
  *
  * @return string
  */
@@ -104,9 +104,7 @@ function ghost_manager_default_service_email_body_html() {
     <div style="font-family:Arial, sans-serif; background:#f4f6f8; padding:30px;">
         <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e2e5ea;">
 
-            <div style="text-align:center;padding:25px 20px;border-bottom:1px solid #eee;">
-                <img src="{{logo_url}}" style="max-width:180px;" alt="">
-            </div>
+            {{logo_block}}
 
             <div style="padding:25px;">
 
@@ -138,7 +136,7 @@ function ghost_manager_default_service_email_body_html() {
 }
 
 /**
- * Default new-user email body (placeholders: {{logo_url}}, {{brand}}, {{reset_link}}, {{important_box}}, {{greeting}}, {{intro}}, {{button_label}}, {{fallback_text}}, {{benefits_intro}}, {{benefits_list}}).
+ * Default new-user email body (placeholders: {{logo_block}}, {{logo_url}}, {{brand}}, {{reset_link}}, {{important_box}}, {{greeting}}, {{intro}}, {{button_label}}, {{fallback_text}}, {{benefits_intro}}, {{benefits_list}}).
  *
  * @return string
  */
@@ -147,9 +145,7 @@ function ghost_manager_default_new_user_body_html() {
     <div style="font-family:Arial, sans-serif; background:#f4f6f8; padding:30px;">
         <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e2e5ea;">
 
-            <div style="text-align:center;padding:25px 20px;border-bottom:1px solid #eee;">
-                <img src="{{logo_url}}" style="max-width:180px;" alt="">
-            </div>
+            {{logo_block}}
 
             <div style="padding:25px;">
 
@@ -199,7 +195,7 @@ function ghost_manager_default_new_user_body_html() {
 }
 
 /**
- * Default password-reset email body (placeholders: {{logo_url}}, {{brand}}, {{reset_link}}, {{heading}}, {{greeting}}, {{intro}}, {{button_label}}, {{footer_text}}, {{link_intro}}).
+ * Default password-reset email body (placeholders: {{logo_block}}, {{logo_url}}, {{brand}}, {{reset_link}}, {{heading}}, {{greeting}}, {{intro}}, {{button_label}}, {{footer_text}}, {{link_intro}}).
  *
  * @return string
  */
@@ -208,9 +204,7 @@ function ghost_manager_default_password_reset_body_html() {
     <div style="font-family:Arial, sans-serif; background:#f4f6f8; padding:30px;">
         <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e2e5ea;">
 
-            <div style="text-align:center;padding:25px 20px;border-bottom:1px solid #eee;">
-                <img src="{{logo_url}}" style="max-width:180px;" alt="">
-            </div>
+            {{logo_block}}
 
             <div style="padding:25px;">
 
@@ -307,11 +301,13 @@ function ghost_manager_default_settings() {
 			'account_card_label_expiry'       => 'Expiry',
 		),
 		'urls'     => array(
-			'logo'                 => 'https://example.com/wp-content/uploads/logo.png',
-			'discord'              => 'https://example.com/your-support-invite',
-			'my_account_relative'  => '/my-account/',
-			'xtream_player_api'    => 'https://example.com/player_api.php',
-			'guide_crypto_com'     => 'https://example.com/guides/crypto/',
+			'logo'                         => 'https://example.com/wp-content/uploads/logo.png',
+			'discord'                      => 'https://example.com/your-support-invite',
+			'my_account_relative'          => '/my-account/',
+			'xtream_player_api'            => '',
+			'xtream_player_api_base_svc1'  => '',
+			'xtream_player_api_base_svc2'  => '',
+			'guide_crypto_com'             => 'https://example.com/guides/crypto/',
 			'guide_revolut'        => 'https://example.com/guides/revolut/',
 			'guide_transak'        => 'https://example.com/guides/transak/',
 		),
@@ -594,6 +590,19 @@ function ghost_manager_apply_legacy_settings_aliases( $settings ) {
 			$r['sub2'] = $r[ $legacy_r[1] ];
 		}
 	}
+	if ( isset( $settings['urls'] ) && is_array( $settings['urls'] ) ) {
+		$u       = &$settings['urls'];
+		$legacy  = isset( $u['xtream_player_api'] ) ? trim( (string) $u['xtream_player_api'] ) : '';
+		$migrate = ( '' !== $legacy ) ? ghost_manager_xtream_legacy_url_to_base( $legacy ) : '';
+		if ( '' !== $migrate ) {
+			if ( ! isset( $u['xtream_player_api_base_svc1'] ) || '' === trim( (string) $u['xtream_player_api_base_svc1'] ) ) {
+				$u['xtream_player_api_base_svc1'] = $migrate;
+			}
+			if ( ! isset( $u['xtream_player_api_base_svc2'] ) || '' === trim( (string) $u['xtream_player_api_base_svc2'] ) ) {
+				$u['xtream_player_api_base_svc2'] = $migrate;
+			}
+		}
+	}
 	return $settings;
 }
 
@@ -701,6 +710,106 @@ function ghost_manager_replace_email_placeholders( $template, $vars ) {
 }
 
 /**
+ * HTML for the optional email header image (empty if no logo URL).
+ *
+ * @return string Safe HTML fragment.
+ */
+function ghost_manager_email_logo_block_html() {
+	$raw = ghost_manager_get( 'urls.logo', '' );
+	if ( ! is_string( $raw ) ) {
+		return '';
+	}
+	$raw = trim( $raw );
+	if ( '' === $raw ) {
+		return '';
+	}
+	$url = esc_url( $raw, array( 'http', 'https' ) );
+	if ( '' === $url ) {
+		return '';
+	}
+	return '<div style="text-align:center;padding:25px 20px 20px;border-bottom:1px solid #eee;">'
+		. '<img src="' . esc_attr( $url ) . '" width="180" style="max-width:180px;width:180px;height:auto;display:inline-block;margin:0 auto;border:0;outline:none;text-decoration:none;" alt="">'
+		. '</div>';
+}
+
+/**
+ * Sanitize Xtream “server” input (host or full URL); adds http:// if scheme missing.
+ *
+ * @param mixed $raw Raw POST value.
+ * @return string esc_url_raw-safe value or empty.
+ */
+function ghost_manager_sanitize_xtream_base_url( $raw ) {
+	$raw = trim( wp_unslash( (string) $raw ) );
+	if ( '' === $raw ) {
+		return '';
+	}
+	if ( ! preg_match( '#^https?://#i', $raw ) ) {
+		$raw = 'http://' . ltrim( $raw, '/' );
+	}
+	$out = esc_url_raw( $raw );
+	return is_string( $out ) ? $out : '';
+}
+
+/**
+ * Build full player_api.php URL from a stored base or legacy full URL.
+ *
+ * @param string $stored Base (e.g. http://exampledns.com) or URL already ending in player_api.php.
+ * @return string Normalized URL or empty.
+ */
+function ghost_manager_normalize_xtream_player_api_url( $stored ) {
+	$stored = trim( (string) $stored );
+	if ( '' === $stored ) {
+		return '';
+	}
+	if ( ! preg_match( '#^https?://#i', $stored ) ) {
+		$stored = 'http://' . ltrim( $stored, '/' );
+	}
+	$stored = esc_url_raw( $stored );
+	if ( ! is_string( $stored ) || '' === $stored ) {
+		return '';
+	}
+	$path = wp_parse_url( $stored, PHP_URL_PATH );
+	$path = is_string( $path ) ? $path : '';
+	if ( '' !== $path && preg_match( '#/player_api\\.php$#i', $path ) ) {
+		return $stored;
+	}
+	return untrailingslashit( $stored ) . '/player_api.php';
+}
+
+/**
+ * Xtream API endpoint for a subscription (Service 1 / Service 2); uses per-service base URLs with legacy fallback.
+ *
+ * @param string $canonical svc1|svc2.
+ * @return string Full player_api.php URL or empty.
+ */
+function ghost_manager_resolve_xtream_api_url_for_service( $canonical ) {
+	$canonical = ghost_manager_normalize_subscription_type( $canonical );
+	$key       = ( GHOST_MANAGER_SUB_SVC2 === $canonical ) ? 'xtream_player_api_base_svc2' : 'xtream_player_api_base_svc1';
+	$base      = ghost_manager_get( 'urls.' . $key, '' );
+	$base      = is_string( $base ) ? trim( $base ) : '';
+	if ( '' !== $base ) {
+		return ghost_manager_normalize_xtream_player_api_url( $base );
+	}
+	$legacy = ghost_manager_get( 'urls.xtream_player_api', '' );
+	return ghost_manager_normalize_xtream_player_api_url( is_string( $legacy ) ? $legacy : '' );
+}
+
+/**
+ * Legacy single-field Xtream URL → base host for migrating to per-service fields.
+ *
+ * @param string $legacy_url Stored legacy URL.
+ * @return string Base without /player_api.php, or empty.
+ */
+function ghost_manager_xtream_legacy_url_to_base( $legacy_url ) {
+	$legacy_url = trim( (string) $legacy_url );
+	if ( '' === $legacy_url ) {
+		return '';
+	}
+	$stripped = preg_replace( '#/player_api\\.php\\s*$#i', '', untrailingslashit( $legacy_url ) );
+	return is_string( $stripped ) ? $stripped : '';
+}
+
+/**
  * Parse "14, 7, 3" style input into unique positive integers (descending).
  *
  * @param string $csv Raw CSV.
@@ -804,13 +913,18 @@ function ghost_manager_sanitize_settings( $input ) {
 	}
 
 	if ( isset( $input['urls'] ) && is_array( $input['urls'] ) ) {
-		$out['urls']['logo']                = esc_url_raw( wp_unslash( $input['urls']['logo'] ?? '' ) );
-		$out['urls']['discord']             = esc_url_raw( wp_unslash( $input['urls']['discord'] ?? '' ) );
-		$out['urls']['my_account_relative'] = sanitize_text_field( wp_unslash( $input['urls']['my_account_relative'] ?? '' ) );
-		$out['urls']['xtream_player_api']   = esc_url_raw( wp_unslash( $input['urls']['xtream_player_api'] ?? '' ) );
-		$out['urls']['guide_crypto_com']    = esc_url_raw( wp_unslash( $input['urls']['guide_crypto_com'] ?? '' ) );
-		$out['urls']['guide_revolut']       = esc_url_raw( wp_unslash( $input['urls']['guide_revolut'] ?? '' ) );
-		$out['urls']['guide_transak']       = esc_url_raw( wp_unslash( $input['urls']['guide_transak'] ?? '' ) );
+		$urls_in = $input['urls'];
+		$out['urls']['logo']                = esc_url_raw( wp_unslash( $urls_in['logo'] ?? '' ) );
+		$out['urls']['discord']             = esc_url_raw( wp_unslash( $urls_in['discord'] ?? '' ) );
+		$out['urls']['my_account_relative'] = sanitize_text_field( wp_unslash( $urls_in['my_account_relative'] ?? '' ) );
+		if ( array_key_exists( 'xtream_player_api', $urls_in ) ) {
+			$out['urls']['xtream_player_api'] = esc_url_raw( wp_unslash( (string) $urls_in['xtream_player_api'] ) );
+		}
+		$out['urls']['xtream_player_api_base_svc1'] = ghost_manager_sanitize_xtream_base_url( $urls_in['xtream_player_api_base_svc1'] ?? '' );
+		$out['urls']['xtream_player_api_base_svc2'] = ghost_manager_sanitize_xtream_base_url( $urls_in['xtream_player_api_base_svc2'] ?? '' );
+		$out['urls']['guide_crypto_com']    = esc_url_raw( wp_unslash( $urls_in['guide_crypto_com'] ?? '' ) );
+		$out['urls']['guide_revolut']       = esc_url_raw( wp_unslash( $urls_in['guide_revolut'] ?? '' ) );
+		$out['urls']['guide_transak']       = esc_url_raw( wp_unslash( $urls_in['guide_transak'] ?? '' ) );
 	}
 
 	if ( isset( $input['renew_urls'] ) && is_array( $input['renew_urls'] ) ) {
